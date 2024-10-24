@@ -9,12 +9,44 @@ public class Main : MonoBehaviour
 {
     static public Main S;
 
+    static Dictionary<WeaponType, WeaponDefinition> WEAP_DICT;
+
+
     [Header("Set in Inspector")]
     public GameObject[] prefabEnemies;
     public float enemySpawnPerSecond = .5f;
     public float enemyDefaultPadding = 1.5f;
+    public WeaponDefinition[] weaponDefinitions;
+    public GameObject prefabPowerUp; // a
+    public WeaponType[] powerUpFrequency = new WeaponType[] { // b
+        WeaponType.blaster, WeaponType.blaster,
+        WeaponType.spread, WeaponType.shield };
+
 
     private BoundsCheck bndCheck;
+
+    public void ShipDestroyed(Enemy e)
+    {
+
+        // Potentially generate a PowerUp
+        if (Random.value <= e.powerUpDropChance)
+        {
+
+            // Choose which PowerUp to pick
+            // Pick one from the possibilities in powerUpFrequency
+            int ndx = Random.Range(0, powerUpFrequency.Length);
+
+            WeaponType puType = powerUpFrequency[ndx];
+            // Spawn a PowerUp
+            GameObject go = Instantiate(prefabPowerUp) as GameObject;
+            PowerUp pu = go.GetComponent<PowerUp>();
+            // Set it to the proper WeaponType
+            pu.SetType(puType);
+
+            // Set it to the position of the destroyed ship
+            pu.transform.position = e.transform.position;
+        }
+    }
 
     private void Awake()
     {
@@ -23,8 +55,23 @@ public class Main : MonoBehaviour
         bndCheck = GetComponent<BoundsCheck>();
 
         Invoke("SpawnEnemy", 1f / enemySpawnPerSecond);
+        WEAP_DICT = new Dictionary<WeaponType, WeaponDefinition>(); 
+        foreach (WeaponDefinition def in weaponDefinitions)
+        { 
+            WEAP_DICT[def.type] = def;
+        }
+
     }
 
+
+    static public WeaponDefinition GetWeaponDefinition(WeaponType wt)
+    {
+        if (WEAP_DICT.ContainsKey(wt))
+        {
+            return (WEAP_DICT[wt]);
+        }
+        return(new WeaponDefinition());
+    }
     public void SpawnEnemy()
     {
         int ndx =  Random.Range(0, prefabEnemies.Length);
